@@ -352,7 +352,6 @@ export default function DentalSimulator() {
       const data = response.data;
       setResultUrl(data.resultUrl);
       setStatus("success")
-      console.log();
     } catch (error) {
       console.log(error);
     }

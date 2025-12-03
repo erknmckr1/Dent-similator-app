@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { fal } from "@fal-ai/client";
 
@@ -92,7 +92,6 @@ export async function POST(request: Request) {
       originalImageFile.type // Dosya tipi
     );
 
-    console.log(originalImageUrl);
 
     const result = await fal.subscribe("fal-ai/flux-pro/kontext", {
       input: {

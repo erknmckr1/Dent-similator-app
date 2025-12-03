@@ -1,13 +1,42 @@
-import DashboardLayoutWrapper from "../components/DashboardLayoutWrapper";
-
-export default function DashboardLayout({
+import DashboardLayoutWrapper from "../components/dashboard/DashboardLayoutWrapper";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <DashboardLayoutWrapper>
-      {children}
-    </DashboardLayoutWrapper>
-  );
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/auth/login");
+  }
+  const authUserId = user.id;
+
+  const { data: userData, error: userError } = await supabase
+    .from("users")
+    .select("name, role, clinics(credits_remaining)") // creditCount için clinics tablosunu join'liyoruz
+    .eq("auth_user_id", authUserId)
+    .single();
+
+  if (userError || !userData) {
+    console.error("Layout: Kullanıcı verisi çekilemedi:", userError?.message);
+    return null; // Veritabanı verisi eksik
+  }
+
+  // Verileri istediğimiz formata dönüştürelim
+  const creditCount =
+    Array.isArray(userData.clinics) && userData.clinics.length > 0
+      ? userData.clinics[0].credits_remaining
+      : 0;
+
+  const userInfo = {
+    name: userData.name,
+    role: userData.role,
+    creditCount: creditCount, // Artık dinamik
+  };
+
+  return <DashboardLayoutWrapper userInfo={userInfo}>{children}</DashboardLayoutWrapper>;
 }

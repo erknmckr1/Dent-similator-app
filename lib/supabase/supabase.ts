@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // NEXT_PUBLIC ön ekli olanlar client'ta da erişilebilir
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
