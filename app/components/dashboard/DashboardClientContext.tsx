@@ -4,6 +4,9 @@
 
 import React from "react";
 import CfoWidgets from "../overview/CfoWidgets";
+import { useState } from "react";
+import { RecordFormModal } from "../records/RecordFormModal";
+import NewPatientModal from "../patients/NewPatientModal";
 import {
   Users,
   CalendarDays,
@@ -13,6 +16,7 @@ import {
   MoreHorizontal,
   CheckCircle2,
   ArrowUpRight,
+  Stethoscope,
 } from "lucide-react";
 import {
   BarChart,
@@ -36,7 +40,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-// --- MOCK DATA --- (Bu veri, dilerseniz Server Component'ten prop olarak da gelebilir.)
 const clinicTrafficData = [
   { name: "Pzt", ziyaret: 12, yeni: 4 },
   { name: "Sal", ziyaret: 18, yeni: 6 },
@@ -91,7 +94,6 @@ const recentPatients = [
   { id: 3, name: "Elif Su", date: "Dün, 14:20", source: "Google" },
 ];
 
-
 // YARDIMCI BİLEŞEN: STAT CARD (Bu da client component olduğu için burada kalmalı)
 function StatCard({
   title,
@@ -127,8 +129,27 @@ function StatCard({
   );
 }
 
+interface PatientsProp {
+  id: string;
+  name: string;
+  phone: string | null;
+  clinic_id: string;
+}
+
 // ANA CLIENT COMPONENT
-export default function DashboardClientContent({ doctorName }: { doctorName: string }) {
+export default function DashboardClientContent({
+  doctorName,
+  patients,
+  clinicId,
+  doctorPkId
+}: {
+  doctorName: string;
+  patients: PatientsProp[];
+  clinicId:string
+  doctorPkId:string
+}) {
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
+  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 p-4">
       {/* 1. HEADER: Hoşgeldin Mesajı ve Hızlı Butonlar */}
@@ -147,9 +168,19 @@ export default function DashboardClientContent({ doctorName }: { doctorName: str
             <CalendarDays className="mr-2 h-4 w-4" />
             Takvimi Aç
           </Button>
-          <Button className="bg-gray-900 text-white hover:bg-gray-800">
+          <Button
+            onClick={() => setIsNewPatientModalOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <UserPlus className="mr-2 h-4 w-4" />
             Yeni Hasta Ekle
+          </Button>
+          <Button
+            onClick={() => setIsRecordModalOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground" // Tema rengi
+          >
+            <Stethoscope className="w-4 h-4 mr-2" />
+            Hasta İşlem Kaydı Aç
           </Button>
         </div>
       </div>
@@ -395,6 +426,19 @@ export default function DashboardClientContent({ doctorName }: { doctorName: str
       </div>
       {/* 5. CFO */}
       <CfoWidgets />
+
+      {/* hasta işlem kaydı model ı  */}
+      <RecordFormModal
+        isOpen={isRecordModalOpen}
+        onClose={() => setIsRecordModalOpen(false)}
+        patients={patients}
+      />
+      <NewPatientModal
+        isOpen={isNewPatientModalOpen}
+        onClose={() => setIsNewPatientModalOpen(false)}
+        clinicId={clinicId}
+        doctorPkId={doctorPkId}
+      />
     </div>
   );
 }

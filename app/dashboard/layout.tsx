@@ -1,6 +1,16 @@
 import DashboardLayoutWrapper from "../components/dashboard/DashboardLayoutWrapper";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+
+interface ClinicsData {
+  credits_remaining: number;
+}
+interface LayoutUserData {
+  name: string;
+  role: string;
+  clinics: ClinicsData | null;
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -19,18 +29,15 @@ export default async function DashboardLayout({
     .from("users")
     .select("name, role, clinics(credits_remaining)") // creditCount için clinics tablosunu join'liyoruz
     .eq("auth_user_id", authUserId)
-    .single();
+    .returns<LayoutUserData[]>() // Dönen yapıyı dizi olarak tanımlıyoruz
+    .single(); // Tek bir kullanıcı beklediğimizi belirtiyoruz
 
   if (userError || !userData) {
     console.error("Layout: Kullanıcı verisi çekilemedi:", userError?.message);
-    return null; // Veritabanı verisi eksik
+    return null;
   }
 
-  // Verileri istediğimiz formata dönüştürelim
-  const creditCount =
-    Array.isArray(userData.clinics) && userData.clinics.length > 0
-      ? userData.clinics[0].credits_remaining
-      : 0;
+  const creditCount = userData.clinics?.credits_remaining ?? 0;
 
   const userInfo = {
     name: userData.name,
@@ -38,5 +45,9 @@ export default async function DashboardLayout({
     creditCount: creditCount, // Artık dinamik
   };
 
-  return <DashboardLayoutWrapper userInfo={userInfo}>{children}</DashboardLayoutWrapper>;
+  return (
+    <DashboardLayoutWrapper userInfo={userInfo}>
+      {children}
+    </DashboardLayoutWrapper>
+  );
 }

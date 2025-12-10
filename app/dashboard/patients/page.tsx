@@ -1,10 +1,11 @@
+import PatientsPageClientContext from "@/app/components/patients/PatientPageClientContext";
+import { getAuthenticatedUserWithData, getDoctorPatients } from "@/lib/server-utils";
 
-import DashboardClientContent from "../components/dashboard/DashboardClientContext";
-import { getAuthenticatedUserWithData,getDoctorPatients } from "@/lib/server-utils";
-export default async function GeneralOverviewPage() {
+export default async function PatientsPage() {
+  // Tek satırda auth + user data
   const userData = await getAuthenticatedUserWithData();
 
-  // Hastaları getir
+  // Hastaları getir (daha fazla field ile)
   const patientsData = await getDoctorPatients(
     userData.clinicId,
     userData.authUserId
@@ -16,12 +17,13 @@ export default async function GeneralOverviewPage() {
     name: p.name,
     phone: p.phone,
     clinic_id: userData.clinicId,
+    gender: p.gender,
+    birthdate: p.birthdate,
+    national_id_no:p.national_id_no
   }));
 
-
   return (
-    <DashboardClientContent
-      doctorName={userData.name}
+    <PatientsPageClientContext
       patients={formattedPatients}
       clinicId={userData.clinicId}
       doctorPkId={userData.authUserId}

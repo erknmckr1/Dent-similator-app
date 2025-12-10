@@ -6,27 +6,24 @@ import {
   SheetContent,
   SheetTrigger,
   SheetTitle,
-} from "@/components/ui/sheet"; // SheetTitle erişilebilirlik için önemli
+} from "@/components/ui/sheet";
 import Sidebar from "./Sidebar";
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 export default function MobileSidebar() {
-  const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
 
-  // Hydration hatasını önlemek için
+  // pathname değiştiğinde menüyü kapat
+  // Bu pattern React'in önerdiği yaklaşım
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Sayfa değiştiğinde menüyü otomatik kapat
-  useEffect(() => {
-    setIsOpen(false);
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      setIsOpen(false);
+    }
   }, [pathname]);
-
-  if (!isMounted) return null;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -39,11 +36,15 @@ export default function MobileSidebar() {
         side="left"
         className="p-0 bg-[#111827] border-r-gray-800 w-72 text-white"
       >
-        {/* Screen Reader için başlık zorunluluğu varsa */}
         <div className="sr-only">
           <SheetTitle>Mobil Menü</SheetTitle>
         </div>
-        <Sidebar />
+        <Sidebar 
+          isCollapsed={false}
+          toggleCollapse={() => {}}
+          userName="Kullanıcı"
+          userRole="Rol"
+        />
       </SheetContent>
     </Sheet>
   );

@@ -9,7 +9,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // RLS'yi atlayan yüksek yetkili istemci
 export const supabaseAdmin = createClient(
   SUPABASE_URL, 
-  SERVICE_ROLE_KEY, // <-- GİZLİ SERVICE ROLE KEY BURADA KULLANILIYOR
+  SERVICE_ROLE_KEY,
   {
     auth: {
       autoRefreshToken: false,

@@ -31,7 +31,7 @@ const routes = [
   { label: "Genel Bakış", icon: LayoutDashboard, href: "/dashboard" },
   { label: "AI Studio", icon: Sparkles, href: "/dashboard/studio" },
   { label: "Hastalar", icon: Users, href: "/dashboard/patients" },
-  { label: "Dosyalar", icon: FolderOpen, href: "/dashboard/folders" },
+  { label: "Dosyalar", icon: FolderOpen, href: "/dashboard/files" },
   { label: "Geçmiş", icon: History, href: "/dashboard/history" },
   { label: "Ayarlar", icon: Settings, href: "/dashboard/settings" },
 ];
@@ -54,7 +54,7 @@ export default function Sidebar({
   creditCount,
 }: SidebarProps) {
   const pathname = usePathname();
-  const CREDIT_LIMIT = 50;
+  const CREDIT_LIMIT = 100;
   const router = useRouter();
   const handleLogOut = async () => {
     try {
