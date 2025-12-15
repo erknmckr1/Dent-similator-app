@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-
 /**
  * Tip tanımları
  */
@@ -23,11 +22,12 @@ export interface Patient {
   notes?: string | null;
 }
 
-
-
 export async function getAuthenticatedUser() {
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   if (!user || error) {
     redirect("/auth/login");
@@ -36,12 +36,11 @@ export async function getAuthenticatedUser() {
   return user.id;
 }
 
-
- /* Kullanıcı detaylarını getirir (clinic_id, role, vs.)
+/* Kullanıcı detaylarını getirir (clinic_id, role, vs.)
  */
 export async function getCurrentUserData(authUserId: string) {
   const supabase = await createClient();
-  
+
   const { data: userData, error } = await supabase
     .from("users")
     .select("name, role, auth_user_id, clinic_id, id")
@@ -68,22 +67,22 @@ export async function getCurrentUserData(authUserId: string) {
 export async function getAuthenticatedUserWithData() {
   const authUserId = await getAuthenticatedUser();
   const userData = await getCurrentUserData(authUserId);
-  
+
   return userData;
 }
-
 
 /**
  * Bir doktora ait hastaları getirir
  */
-export async function getDoctorPatients(clinicId: string, doctorAuthId: string) {
+export async function getClinicPatients(clinicId: string) {
   const supabase = await createClient();
-  
+
   const { data: patientsData, error } = await supabase
     .from("patients")
-    .select("id, name, phone, birthdate, gender, created_at, notes,national_id_no")
+    .select(
+      "id, name, phone, birthdate, gender, created_at, notes, national_id_no"
+    )
     .eq("clinic_id", clinicId)
-    .eq("assigned_doctor", doctorAuthId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -94,16 +93,16 @@ export async function getDoctorPatients(clinicId: string, doctorAuthId: string) 
   return patientsData || [];
 }
 
-
 /**
  * Belirli bir hastanın detaylarını getirir
  */
 export async function getPatientById(patientId: string, doctorAuthId: string) {
   const supabase = await createClient();
-  
+
   const { data: patient, error } = await supabase
     .from("patients")
-    .select(`
+    .select(
+      `
       id, 
       name, 
       phone, 
@@ -128,7 +127,8 @@ export async function getPatientById(patientId: string, doctorAuthId: string) {
           )
         )
       )
-    `)
+    `
+    )
     .eq("id", patientId)
     .eq("assigned_doctor", doctorAuthId)
     .maybeSingle();
@@ -139,4 +139,21 @@ export async function getPatientById(patientId: string, doctorAuthId: string) {
   }
 
   return patient;
+}
+
+// Aktiviteleri çekecek foksiyon
+
+export async function getHistoryData() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return console.error("History fetch error:", error);
+  }
+
+  return data ?? [];
 }

@@ -6,7 +6,6 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // getUser() direkt user objesi döndürür, user.user değil!
     const {
       data: { user },
       error: authError,
@@ -19,7 +18,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // parsed req body
     const body = await req.json();
     const {
       patientId,
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Auth user'dan users tablosundaki kaydı bul
     const { data: appUser, error: userError } = await supabase
       .from("users")
-      .select("id, clinic_id, role")
+      .select("id, clinic_id, role, name")
       .eq("auth_user_id", user.id)
       .single();
 
@@ -71,6 +69,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, message: "Bu kliniğe erişim yetkiniz yoktur." },
         { status: 403 }
+      );
+    }
+
+    // Hasta bilgisini çek (log için)
+    const { data: patientData, error: patientError } = await supabase
+      .from("patients")
+      .select("name, phone, gender")
+      .eq("id", patientId)
+      .single();
+
+    if (patientError) {
+      console.error("Hasta bulunamadı:", patientError);
+      return NextResponse.json(
+        { success: false, message: "Hasta bulunamadı." },
+        { status: 404 }
       );
     }
 
@@ -100,6 +113,32 @@ export async function POST(req: NextRequest) {
         },
         { status: 500 }
       );
+    }
+
+    // Activity log oluştur
+    const { error: activityError } = await supabaseAdmin
+      .from("activity_logs")
+      .insert({
+        clinic_id: clinicId,
+        user_id: appUser.id,
+        patient_id: patientId,  
+        entity: `patient.${recordType}`,
+        entity_id: newRecord.id,
+        action_type:recordType,
+        metadata: {
+          patient_name: patientData.name,
+          record_type: recordType,
+          record_title: title,
+          record_date: recordDate || new Date().toISOString().split("T")[0],
+          created_by: user.email,
+          created_by_name: appUser.name,
+          method: "api",
+        },
+      });
+
+    if (activityError) {
+      console.error("Activity log oluşturulamadı:", activityError);
+      // Log hatası ana işlemi durdurmaz, sadece log tutuyoruz
     }
 
     return NextResponse.json(

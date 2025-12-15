@@ -1,13 +1,12 @@
 
 import DashboardClientContent from "../components/dashboard/DashboardClientContext";
-import { getAuthenticatedUserWithData,getDoctorPatients } from "@/lib/server-utils";
+import { getAuthenticatedUserWithData,getClinicPatients } from "@/lib/server-utils";
 export default async function GeneralOverviewPage() {
   const userData = await getAuthenticatedUserWithData();
 
   // Hastaları getir
-  const patientsData = await getDoctorPatients(
+  const patientsData = await getClinicPatients(
     userData.clinicId,
-    userData.authUserId
   );
 
   // Mapping işlemi

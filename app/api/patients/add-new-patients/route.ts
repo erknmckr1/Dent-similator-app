@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       gender,
       birthdate,
       notes,
-      national_id_no
+      national_id_no,
     } = body;
 
     // Validasyon
@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "Zorunlu alanlar eksik: clinic_id, assigned_doctor, name, gender, phone",
+          message:
+            "Zorunlu alanlar eksik: clinic_id, assigned_doctor, name, gender, phone",
         },
         { status: 400 }
       );
@@ -66,7 +67,10 @@ export async function POST(req: NextRequest) {
     // assigned_doctor kontrolü - bu kullanıcının auth_user_id'si olmalı
     if (assigned_doctor !== appUser.auth_user_id) {
       return NextResponse.json(
-        { success: false, message: "Yalnızca kendinize hasta atayabilirsiniz." },
+        {
+          success: false,
+          message: "Yalnızca kendinize hasta atayabilirsiniz.",
+        },
         { status: 403 }
       );
     }
@@ -115,6 +119,22 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    const { data:activity, error:activityError} = await supabaseAdmin.from("activity_logs").insert({
+      clinic_id,
+      user_id: appUser.id,
+      patient_id: newRecord.id,
+      entity: "patient",
+      entity_id: newRecord.id,
+      action_type: "patient.created",
+      metadata: {
+        name,
+        phone,
+        gender,
+        created_by: user.email,
+        method: "api",
+      },
+    });
 
     return NextResponse.json(
       {
