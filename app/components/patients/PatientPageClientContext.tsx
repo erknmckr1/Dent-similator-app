@@ -89,6 +89,11 @@ const PatientsPageClientContext = ({
     setIsDetailModalOpen(true);
   };
 
+  //  Düzenleme fonksiyonu (şimdilik console.log)
+  const handleEditPatient = () => {
+    console.log("Düzenle:", selectedPatient);
+    // TODO: Edit modal açılacak
+  };
 
   //  Geçmiş görüntüleme fonksiyonu
   const handleViewHistory = () => {

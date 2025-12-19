@@ -4,6 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -44,6 +46,9 @@
 }
 
 :root {
+  /* INFO/EDIT: Shopify Admin Mavisi (Düzenleme işlemleri için) */
+  --info: #2263b8;
+  --info-foreground: #ffffff;
   /* RADIUS: Shopify tarzı biraz daha keskin ama yumuşak köşeler (8px) */
   --radius: 0.5rem;
 
@@ -110,6 +115,8 @@
 }
 
 .dark {
+  --info: #3d8aff;
+  --info-foreground: #ffffff;
   /* DARK MODE: Shopify'ın koyu modu (Gece mavisi/Siyah) */
   --background: oklch(0.15 0.02 260);
   --foreground: oklch(0.90 0.01 260);
@@ -158,4 +165,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Event kutularının minimum yüksekliğini düşürür ve tek satıra zorlar */
+.fc-v-event {
+  min-height: 20px !important;
+  height: auto !important;
+}
+
+.fc-event-main {
+  padding: 0 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
 }

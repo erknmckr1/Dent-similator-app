@@ -30,121 +30,83 @@ export async function POST(req: NextRequest) {
       cost,
     } = body;
 
+    // Temel Validasyon
     if (!patientId || !clinicId || !recordType || !title) {
       return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Zorunlu alanlar eksik: patientId, clinicId, recordType, title",
-        },
+        { success: false, message: "Eksik alanlar var" },
         { status: 400 }
       );
     }
 
-    const validasyonTypes = ["TREATMENT", "PAYMENT", "NOTE"];
-    if (!validasyonTypes.includes(recordType)) {
-      return NextResponse.json(
-        { success: false, message: "Geçersiz kayıt tipi" },
-        { status: 400 }
-      );
-    }
-
-    // Auth user'dan users tablosundaki kaydı bul
+    // Kullanıcı ve Yetki Kontrolü
     const { data: appUser, error: userError } = await supabase
       .from("users")
-      .select("id, clinic_id, role, name")
+      .select("id, clinic_id")
       .eq("auth_user_id", user.id)
       .single();
 
-    if (!appUser || userError) {
-      console.error("Kullanıcı bulunamadı:", userError);
+    if (!appUser || userError || appUser.clinic_id !== clinicId) {
       return NextResponse.json(
-        { success: false, message: "Kullanıcı kaydı bulunamadı." },
-        { status: 404 }
-      );
-    }
-
-    // İsteği atan kullanıcının klinik yetkisi var mı kontrol et
-    if (appUser.clinic_id !== clinicId) {
-      return NextResponse.json(
-        { success: false, message: "Bu kliniğe erişim yetkiniz yoktur." },
+        { success: false, message: "Yetkisiz işlem" },
         { status: 403 }
       );
     }
 
-    // Hasta bilgisini çek (log için)
-    const { data: patientData, error: patientError } = await supabase
-      .from("patients")
-      .select("name, phone, gender")
-      .eq("id", patientId)
-      .single();
-
-    if (patientError) {
-      console.error("Hasta bulunamadı:", patientError);
-      return NextResponse.json(
-        { success: false, message: "Hasta bulunamadı." },
-        { status: 404 }
-      );
-    }
-
-    // Kayıt oluştur
     const { data: newRecord, error: insertError } = await supabaseAdmin
       .from("patient_records")
       .insert({
         patient_id: patientId,
         clinic_id: clinicId,
         record_type: recordType,
-        record_date: recordDate || new Date().toISOString().split("T")[0],
+        record_date: recordDate
+          ? recordDate.replace("Z", "")
+          : new Date().toLocaleString("sv-SE").replace(" ", "T"),
         title: title.trim(),
         description: description?.trim() || null,
         price: price || null,
         cost: cost || null,
         created_by: appUser.id,
+        doctor_id: appUser.id,
       })
-      .select("id, record_type, title, record_date")
+      .select(
+        `
+        id, 
+        record_date, 
+        title, 
+        record_type, 
+        price, 
+        description, 
+        cost, 
+        patient_id,
+        patients (name)
+      `
+      )
       .single();
 
     if (insertError) {
-      console.error("Insert hatası:", insertError);
       return NextResponse.json(
-        {
-          success: false,
-          message: "Kayıt oluşturulamadı: " + insertError.message,
-        },
+        { success: false, message: insertError.message },
         { status: 500 }
       );
     }
 
-    // Activity log oluştur
-    const { error: activityError } = await supabaseAdmin
-      .from("activity_logs")
-      .insert({
-        clinic_id: clinicId,
-        user_id: appUser.id,
-        patient_id: patientId,  
-        entity: `patient.${recordType}`,
-        entity_id: newRecord.id,
-        action_type:recordType,
-        metadata: {
-          patient_name: patientData.name,
-          record_type: recordType,
-          record_title: title,
-          record_date: recordDate || new Date().toISOString().split("T")[0],
-          created_by: user.email,
-          created_by_name: appUser.name,
-          method: "api",
-        },
-      });
-
-    if (activityError) {
-      console.error("Activity log oluşturulamadı:", activityError);
-      // Log hatası ana işlemi durdurmaz, sadece log tutuyoruz
-    }
+    await supabaseAdmin.from("activity_logs").insert({
+      clinic_id: clinicId,
+      user_id: appUser.id,
+      entity: "patient_records",
+      entity_id: newRecord.id,
+      action_type: "CREATE",
+      metadata: {
+        title: newRecord.title,
+        patient_id: patientId,
+        created_at: new Date().toISOString(),
+      },
+    });
 
     return NextResponse.json(
       {
         success: true,
-        data: newRecord,
+        data: newRecord, // Artık içinde hasta ismi de var!
         message: "Kayıt başarıyla oluşturuldu",
       },
       { status: 201 }
@@ -152,7 +114,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("API Hatası:", err);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: "Sunucu hatası" },
       { status: 500 }
     );
   }

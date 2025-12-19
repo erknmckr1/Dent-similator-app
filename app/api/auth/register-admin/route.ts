@@ -1,17 +1,14 @@
-
 import { NextResponse } from "next/server";
 
 // /app/api/auth/register-admin/route.ts (Örneğimiz)
 
 import { createClient } from "@supabase/supabase-js";
-// ... diğer importlar
 
 // Service Role Key'in sadece bu dosya içinde kullanimi:
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY, );
-
+const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY);
 
 export async function POST(request: Request) {
   const { clinicName, fullName, email, password, phone, confirmPassword } =
@@ -48,9 +45,9 @@ export async function POST(request: Request) {
       .insert({
         name: clinicName,
         phone: phone,
-        credits_remaining: 100, // Başlangıç kredisi
+        credits_remaining: 100,
       })
-      .select("id")
+      .select()
       .single();
 
     if (clinicError) {
@@ -90,7 +87,7 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     console.error("Sunucu Hatası:", err);
-    NextResponse.json(
+    return NextResponse.json(
       { message: "Beklenmedik bir hata olustu" },
       { status: 500 }
     );

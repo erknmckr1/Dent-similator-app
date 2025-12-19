@@ -4,9 +4,15 @@
 
 import React from "react";
 import CfoWidgets from "../overview/CfoWidgets";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RecordFormModal } from "../records/RecordFormModal";
 import NewPatientModal from "../patients/NewPatientModal";
+import CalendarPicker from "../calendar/CalendarPicker";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@radix-ui/react-popover";
 import {
   Users,
   CalendarDays,
@@ -136,25 +142,67 @@ interface PatientsProp {
   clinic_id: string;
 }
 
+type PatientRecord = {
+  id: string;
+  record_date: string;
+  title: string;
+  record_type: string;
+  price: number | null;
+  description?: string | null;
+  cost?: number | null;
+  patient_id: string;
+  patients?: {
+    name: string;
+  };
+};
+
 // ANA CLIENT COMPONENT
 export default function DashboardClientContent({
   doctorName,
   patients,
   clinicId,
-  doctorPkId
+  doctorPkId,
 }: {
   doctorName: string;
   patients: PatientsProp[];
-  clinicId:string
-  doctorPkId:string
+  clinicId: string;
+  doctorPkId: string;
 }) {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [records, setRecords] = useState<PatientRecord[]>([]);
+
+  // records fetch function
+  const fetchRecords = async () => {
+    const res = await fetch("/api/records/get-records");
+    const json = await res.json();
+    if (json.success) setRecords(json.data);
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  // --- MANİPÜLASYON FONKSİYONLARI ---
+  const handleLocalUpdate = (updatedRecord: PatientRecord) => {
+    setRecords((prev) =>
+      prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r))
+    );
+  };
+
+  const handleLocalDelete = (recordId: string) => {
+    setRecords((prev) => prev.filter((r) => r.id !== recordId));
+  };
+
+  const handleLocalAdd = (newRecord: PatientRecord) => {
+    setRecords((prev) => [...prev, newRecord]);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 p-4">
       {/* 1. HEADER: Hoşgeldin Mesajı ve Hızlı Butonlar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex flex-col items-center gap-3 p-4 bg-card rounded-xl border border-border shadow-sm">
           {/* DİNAMİK İSİM ARTIK PROP OLARAK GELİYOR */}
           <h2 className="text-3xl font-bold text-gray-900">
             {doctorName}, Günaydın! 👋
@@ -163,25 +211,53 @@ export default function DashboardClientContent({
             Bugün 5 randevunuz var, kliniğiniz %85 doluluk oranında.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="hidden sm:flex bg-white">
-            <CalendarDays className="mr-2 h-4 w-4" />
-            Takvimi Aç
-          </Button>
-          <Button
-            onClick={() => setIsNewPatientModalOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Yeni Hasta Ekle
-          </Button>
-          <Button
-            onClick={() => setIsRecordModalOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground" // Tema rengi
-          >
-            <Stethoscope className="w-4 h-4 mr-2" />
-            Hasta İşlem Kaydı Aç
-          </Button>
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-xl border border-border shadow-sm">
+          {/* TAKVİM POPOVER */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-10 border-input hover:bg-accent transition-all shadow-sm"
+              >
+                <CalendarDays className="mr-2 h-4 w-4 text-primary" />
+                <span>Planlama Takvimi</span>
+              </Button>
+            </PopoverTrigger>
+            {/* Popover içeriğini takvime göre genişletiyoruz (min-w-[600px] veya md:w-[800px]) */}
+            <PopoverContent
+              align="start"
+              className="w-[95vw] md:w-[700px] p-0 overflow-hidden border-border rounded-xl shadow-2xl"
+            >
+              <div className="bg-primary text-muted p-3 border-b border-border">
+                <h4 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider">
+                  <CalendarDays className="w-4 h-4" /> Hızlı Takvim Görünümü
+                </h4>
+              </div>
+              <div className="p-4 bg-card  overflow-y-auto">
+                <CalendarPicker records={records} />
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* AKSİYON BUTONLARI */}
+          <div className="flex items-center gap-2 ml-auto">
+            <Button
+              onClick={() => setIsNewPatientModalOpen(true)}
+              variant="secondary"
+              className="h-10 font-medium transition-all active:scale-95"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Yeni Hasta
+            </Button>
+
+            <Button
+              onClick={() => setIsRecordModalOpen(true)}
+              className="h-10 bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
+            >
+              <Stethoscope className="w-4 h-4 mr-2" />
+              İşlem Kaydı Aç
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -432,6 +508,10 @@ export default function DashboardClientContent({
         isOpen={isRecordModalOpen}
         onClose={() => setIsRecordModalOpen(false)}
         patients={patients}
+        records={records}
+        onLocalUpdate={handleLocalUpdate}
+        onLocalDelete={handleLocalDelete}
+        onLocalAdd={handleLocalAdd}
       />
       <NewPatientModal
         isOpen={isNewPatientModalOpen}

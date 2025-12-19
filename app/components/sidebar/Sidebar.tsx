@@ -71,7 +71,7 @@ export default function Sidebar({
   return (
     <div
       className={cn(
-        "relative flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
+        "relative  flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
         isCollapsed ? "w-20" : "w-72",
         className
       )}

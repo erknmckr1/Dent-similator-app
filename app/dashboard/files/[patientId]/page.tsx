@@ -54,8 +54,6 @@ export default async function PatientFilesPage({
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     ) || [];
 
-  console.log(folders);
-
   return (
     <div className="p-8 max-w-7xl h-screen overflow-y-auto mx-auto">
       {/* Hasta Bilgileri Başlığı */}

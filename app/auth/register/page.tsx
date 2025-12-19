@@ -3,9 +3,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import axios from "axios";
 export default function RegisterPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: "",
     clinicName: "",
@@ -27,8 +30,16 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     try {
       const response = await axios.post("/api/auth/register-admin", formData);
-    } catch (err) {
-      console.log(err)
+
+      if (response.status === 200) {
+        toast.success("Kayıt başarılı! Giriş yapabilirsiniz.");
+        router.push("/auth/login");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(
+        err?.response?.data?.error || "Kayıt sırasında bir hata oluştu."
+      );
     }
   };
   return (
@@ -142,7 +153,10 @@ export default function RegisterPage() {
 
           <div className="mt-4 text-center text-sm">
             Zaten bir hesabınız var mı?{" "}
-            <Link href="/auth/login" className="underline font-medium text-gray-900">
+            <Link
+              href="/auth/login"
+              className="underline font-medium text-gray-900"
+            >
               Giriş Yap
             </Link>
           </div>

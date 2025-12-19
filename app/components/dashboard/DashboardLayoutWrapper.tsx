@@ -27,7 +27,7 @@ export default function DashboardLayoutWrapper({
     <div className="h-full relative bg-gray-50/50">
       {/* DESKTOP SIDEBAR */}
       {/* Genişlik değişimi burada yönetiliyor */}
-      <div className="hidden md:flex h-full flex-col fixed inset-y-0 z-80">
+      <div className="hidden md:flex h-full flex-col fixed inset-y-0 z-40">
         <Sidebar
           userName={userInfo.name}
           userRole={userInfo.role}
@@ -46,7 +46,7 @@ export default function DashboardLayoutWrapper({
         )}
       >
         {/* MOBIL NAVBAR (Değişiklik yok) */}
-        <div className="flex items-center p-4 md:hidden border-b bg-white sticky top-0 z-50">
+        <div className="flex items-center p-4 md:hidden border-b bg-muted sticky top-0 z-50">
           <MobileSidebar />
           <span className="ml-4 font-bold text-lg text-gray-800">
             DentVision
