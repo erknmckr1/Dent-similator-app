@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -22,18 +23,29 @@ import {
   History,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown, // Yeni eklendi
 } from "lucide-react";
 import axios from "axios";
 
-// Renkleri "hardcoded" vermektense, aktif durumda tema rengini kullanacağız.
-// Buradaki color tanımlarını kaldırdık veya sadeleştirebiliriz.
 const routes = [
   { label: "Genel Bakış", icon: LayoutDashboard, href: "/dashboard" },
   { label: "AI Studio", icon: Sparkles, href: "/dashboard/studio" },
   { label: "Hastalar", icon: Users, href: "/dashboard/patients" },
   { label: "Dosyalar", icon: FolderOpen, href: "/dashboard/files" },
   { label: "Geçmiş", icon: History, href: "/dashboard/history" },
-  { label: "Ayarlar", icon: Settings, href: "/dashboard/settings" },
+  {
+    label: "Ayarlar",
+    icon: Settings,
+    href: "/dashboard/settings",
+    children: [
+      { label: "Profilim", href: "/dashboard/settings/profile" },
+      {
+        label: "Personel Yönetimi",
+        href: "/dashboard/settings/personel-management",
+      },
+      { label: "Klinik Bilgileri", href: "/dashboard/settings/clinic" },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -53,9 +65,12 @@ export default function Sidebar({
   userRole,
   creditCount,
 }: SidebarProps) {
+  // Alt menülerin açık/kapalı durumunu takip eder
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
   const pathname = usePathname();
   const CREDIT_LIMIT = 100;
   const router = useRouter();
+
   const handleLogOut = async () => {
     try {
       const response = await axios.post("/api/auth/logout");
@@ -68,15 +83,23 @@ export default function Sidebar({
       alert("Oturum kapatma işlemi başarısız.");
     }
   };
+
+  const toggleMenu = (label: string) => {
+    if (isCollapsed) return; // Sidebar kapalıyken accordion çalışmaz
+    setOpenMenus((prev) =>
+      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label]
+    );
+  };
+
   return (
     <div
       className={cn(
-        "relative  flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
+        "relative flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
         isCollapsed ? "w-20" : "w-72",
         className
       )}
     >
-      {/* 1. HEADER & TOGGLE BUTONU */}
+      {/* 1. HEADER */}
       <div className="flex items-center p-4 mb-4 h-16">
         <div
           className={cn(
@@ -84,7 +107,6 @@ export default function Sidebar({
             isCollapsed ? "justify-center w-full" : "justify-between w-full"
           )}
         >
-          {/* Logo Alanı */}
           <Link
             href="/dashboard"
             className={cn(
@@ -93,25 +115,21 @@ export default function Sidebar({
             )}
           >
             <div className="relative w-8 h-8">
-              {/* LOGO ZEMİNİ: bg-sidebar-primary (Bronz) */}
               <div className="absolute inset-0 bg-sidebar-primary rounded-lg flex items-center justify-center shadow-md">
                 <Sparkles className="h-5 w-5 text-sidebar-primary-foreground" />
               </div>
             </div>
-            {/* LOGO YAZISI: Ana tema rengi */}
             <h1 className="text-xl font-bold text-sidebar-foreground whitespace-nowrap tracking-tight">
               DentVision
             </h1>
           </Link>
 
-          {/* Eğer collapsed ise sadece logo ikonunu göster */}
           {isCollapsed && (
             <div className="w-8 h-8 flex items-center justify-center bg-sidebar-primary rounded-lg shadow-md">
               <Sparkles className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
           )}
 
-          {/* Küçültme/Büyütme Butonu */}
           <button
             onClick={toggleCollapse}
             className={cn(
@@ -131,49 +149,89 @@ export default function Sidebar({
       </div>
 
       {/* 2. MENU LINKLERİ */}
-      <div className="flex-1 px-3 space-y-2">
+      <div className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
         <TooltipProvider delayDuration={0}>
           {routes.map((route) => {
-            const isActive = pathname === route.href;
-
-            // Link İçeriği
-            const LinkContent = (
-              <div
-                className={cn(
-                  "flex items-center p-3 rounded-lg transition-all duration-200 cursor-pointer group font-medium",
-                  // AKTİF DURUM: Zemin Accent (Koyu Gri), İkon Primary (Bronz)
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
-                    : "text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
-                  isCollapsed && "justify-center"
-                )}
-              >
-                <route.icon
-                  className={cn(
-                    "w-5 h-5 transition-colors",
-                    !isCollapsed && "mr-3"
-                  )}
-                />
-                {!isCollapsed && <span className="text-sm">{route.label}</span>}
-              </div>
-            );
+            const hasChildren = !!route.children;
+            const isMenuOpen = openMenus.includes(route.label);
+            // Ana linkin veya herhangi bir alt linkin aktif olup olmadığını kontrol eder
+            const isParentActive =
+              pathname === route.href ||
+              route.children?.some((child) => pathname === child.href);
 
             return (
-              <div key={route.href}>
+              <div key={route.href} className="space-y-1">
                 {isCollapsed ? (
+                  // KAPALI SIDEBAR: Sadece Tooltip ile ana ikonlar
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Link href={route.href}>{LinkContent}</Link>
+                      <Link
+                        href={route.href}
+                        className={cn(
+                          "flex items-center justify-center p-3 rounded-lg transition-all duration-200 group",
+                          isParentActive
+                            ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        )}
+                      >
+                        <route.icon className="w-5 h-5" />
+                      </Link>
                     </TooltipTrigger>
                     <TooltipContent
                       side="right"
-                      className="bg-sidebar-accent text-sidebar-foreground border-sidebar-border font-medium"
+                      className="bg-sidebar-accent text-sidebar-foreground border-sidebar-border"
                     >
                       {route.label}
                     </TooltipContent>
                   </Tooltip>
                 ) : (
-                  <Link href={route.href}>{LinkContent}</Link>
+                  // AÇIK SIDEBAR: Accordion yapısı
+                  <>
+                    <div
+                      onClick={() =>
+                        hasChildren
+                          ? toggleMenu(route.label)
+                          : router.push(route.href)
+                      }
+                      className={cn(
+                        "flex items-center p-3 rounded-lg transition-all duration-200 cursor-pointer group font-medium",
+                        isParentActive
+                          ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <route.icon className="w-5 h-5 mr-3 shrink-0" />
+                      <span className="text-sm flex-1">{route.label}</span>
+                      {hasChildren && (
+                        <ChevronDown
+                          className={cn(
+                            "w-4 h-4 transition-transform duration-200 opacity-50",
+                            isMenuOpen && "rotate-180"
+                          )}
+                        />
+                      )}
+                    </div>
+
+                    {/* ALT MENÜ LİSTESİ */}
+                    {hasChildren && isMenuOpen && (
+                      <div className="ml-4 pl-4 border-l border-sidebar-border space-y-1 mt-1 animate-in slide-in-from-top-2 duration-200">
+                        {route.children?.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={cn(
+                              "block p-2 text-xs rounded-md transition-colors",
+                              pathname === child.href
+                                ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                            )}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -183,8 +241,7 @@ export default function Sidebar({
 
       {/* 3. KREDİ WIDGET */}
       {!isCollapsed && (
-        <div className="p-3 animate-in fade-in duration-500">
-          {/* WIDGET ZEMİNİ: bg-sidebar-accent (Sidebar renginin bir ton açığı) */}
+        <div className="p-3">
           <div className="bg-sidebar-accent rounded-xl p-4 border border-sidebar-border shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <CreditCard className="w-4 h-4 text-sidebar-primary" />
@@ -199,7 +256,6 @@ export default function Sidebar({
                   {creditCount}/{CREDIT_LIMIT}
                 </span>
               </div>
-              {/* PROGRESS BAR: Gösterge otomatik olarak 'primary' rengini (Bronz) alır */}
               <Progress
                 value={((creditCount || 0) / CREDIT_LIMIT) * 100}
                 className="h-2 bg-sidebar-border"
@@ -223,16 +279,16 @@ export default function Sidebar({
           {!isCollapsed && (
             <>
               <div className="flex flex-col items-start overflow-hidden">
-                <span className="text-sm font-medium group-hover:text-sidebar-accent-foreground text-sidebar-foreground truncate w-32 text-left">
-                  Dr. {userName} - {userRole}
+                <span className="text-sm font-medium text-sidebar-foreground truncate w-32 text-left">
+                  Dr. {userName}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
-                  Premium
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  {userRole}
                 </span>
-              </div>{" "}
+              </div>
               <LogOut
                 onClick={handleLogOut}
-                className="w-4 h-4 ml-auto text-muted-foreground group-hover:text-sidebar-primary transition-colors"
+                className="w-4 h-4 ml-auto text-muted-foreground hover:text-sidebar-primary transition-colors"
               />
             </>
           )}

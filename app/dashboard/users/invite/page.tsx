@@ -71,6 +71,7 @@ export default function InviteUserForm() {
               <SelectContent>
                 <SelectItem value="doctor">🦷 Doktor</SelectItem>
                 <SelectItem value="staff">👩🏻‍💻 Klinik Personeli</SelectItem>
+                <SelectItem value="secretary">👩🏻‍💻 Sekreter</SelectItem>
                 <SelectItem value="marketing">📢 Pazarlama</SelectItem>
               </SelectContent>
             </Select>

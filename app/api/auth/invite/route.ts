@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const validRoles = ["staff", "doctor", "marketing"];
+  const validRoles = ["staff", "doctor", "marketing","secretary"];
   if (!validRoles.includes(role.toLowerCase())) {
     return NextResponse.json(
       { error: "Geçersiz rol türü belirtildi." },
